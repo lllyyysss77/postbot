@@ -1,7 +1,14 @@
 <p align="center">
 	<img alt="logo" src="https://postbot.exmay.com/docs/images/postbot_logo.svg" width="150" height="150">
 </p>
-<h1 align="center" style="margin: 30px 0 30px; font-weight: bold;">PostBot 内容同步助手 v1.2.0</h1>
+<h1 align="center" style="margin: 30px 0 30px; font-weight: bold;">PostBot 内容同步助手 v1.2.1</h1>
+
+::: warning
+当前为快速迭代日常开发版，供开源社区贡献者快速协作与迭代。<br />
+开发者如需本地开发运行时，请访问稳定版 <a href="https://github.com/gitcoffee-os/postbot/tree/v1.1.20">PostBot v1.1.20</a>
+。
+:::
+
 <h4 align="center">
 	一款开源的多平台内容同步分发生产力工具。
 	<br />
@@ -63,6 +70,12 @@
    - 内置智能网页阅读器，网页内容智能提取。
 ### 🎯 平台适配
    - 自动优化内容适配，以满足各平台特性要求。
+### 🆓 免费
+   - 浏览器扩展社区版完全开源永久免费，社区版无需付费即可使用全部核心同步发布功能。默认可不依赖任何 AI API Key 及不消耗 Token 自动同步发布。OPC、个人自媒体和中小团队可以零成本免费使用。
+### ⚡ 多引擎
+   - 内置了高效的同步发布引擎，开箱即用。默认的核心同步发布引擎在运行时完全不会消耗任何 AI API 的 Token 额度，让你可以零成本地享受一键多平台同步分发的核心便利。同时支持集成 Playwright、PageAgent、OpenClaw、Hermes Agent 等高级自动化引擎，可根据自身工作流，灵活定制内容分发的具体逻辑和流程，实现更复杂的同步发布场景。
+### 💻  多端
+   - 默认提供浏览器扩展支持，同时可扩展至桌面端及移动端，支持与更多桌面端及移动端工具集成或协作。   
 ### ✨ AI
    - 可扩展集成 AI，内容更个性化、流程更智能。
 ### [🧩 扩展](https://postbot.exmay.com/docs/extension)
@@ -116,3 +129,13 @@ PostBot 内容同步助手 微信 交流群：
 ## 🌟 Star History
 
 [![Star History Chart](https://api.star-history.com/image?repos=gitcoffee-os/postbot&type=date&legend=top-left)](https://github.com/gitcoffee-os/postbot)
+
+<div align="center">
+
+**⚡ PostBot 内容同步助手** - 一款开源的多平台内容同步分发生产力工具。
+
+支持将文章、笔记、动态、图片、视频、音频等内容，一键同步发布至主流媒体平台。 🚀
+
+[🏠 官网](https://postbot.exmay.com) | [📖 文档](https://postbot.exmay.com/docs) | [✨ PostBot 内容同步助手 云端体验](https://postbot.exmay.com/exmay/postbot/center/home) | [💬 社区](https://postbot.exmay.com/docs/usergroup) | [🐛 反馈](https://github.com/gitcoffee-os/postbot/issues) | [🌐 国际版 Postar](https://github.com/gitcoffee-os/postar)
+
+</div>

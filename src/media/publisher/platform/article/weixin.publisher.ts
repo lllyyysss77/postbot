@@ -117,7 +117,9 @@ export const weixinArticlePublisher = async (data) => {
 
     const formElement = {
         title: 'textarea#title',
+        titleInput: 'div.ProseMirror[data-placeholder="请在这里输入标题"]',
         editor: 'div.ProseMirror[contenteditable="true"]',
+        editorText: '从这里开始写正文',
         imageUploadAdd: '.js_imagedialog',
         imageUpload: '.js_upload_btn_container input[type="file"]',
         imageNextButtons: 'button.weui-desktop-btn_primary:not([disabled]',
@@ -144,17 +146,20 @@ export const weixinArticlePublisher = async (data) => {
         console.log('images', images);
 
         for (const image of images) {
-            // 更新进度及状态
             console.log('image', image);
             const src = image.getAttribute('src');
             if (!src || !src.startsWith('http')) {
                 continue;
             }
-            const result = await uploadImage(src);
-            if (!result) {
-                continue;
+            try {
+                const result = await uploadImage(src);
+                if (!result) {
+                    continue;
+                }
+                image.setAttribute('src', result.url);
+            } catch (error) {
+                console.log('图片上传失败，跳过', src, error);
             }
-            image.setAttribute('src', result.url);
         }
         const content = doc.body.innerHTML;
         console.log('content', content);
@@ -165,14 +170,36 @@ export const weixinArticlePublisher = async (data) => {
         console.log('autoFillContent');
         const titleTextarea = document.querySelector(formElement.title);
         console.log('titleTextarea', titleTextarea);
+        
+        const titleText = contentData?.title?.slice(0, fromRule.title.max) || '';
+
         if (titleTextarea) {
-            (titleTextarea as HTMLTextAreaElement).value = contentData?.title?.slice(0, fromRule.title.max) || '';
+            (titleTextarea as HTMLTextAreaElement).value = titleText;
             titleTextarea.dispatchEvent(new Event('input', { bubbles: true }));
             titleTextarea.dispatchEvent(new Event('change', { bubbles: true }));
         }
 
-        const editor = document.querySelector(formElement.editor) as HTMLElement;
-        console.log('editor', editor);
+        const titleInput = document.querySelector(formElement.titleInput);
+        console.log('titleInput', titleInput);
+        
+        if (titleInput) {
+            const titlePasteEvent = pasteEvent();
+            titlePasteEvent.clipboardData.setData('text/html', titleText);
+            titleInput.dispatchEvent(titlePasteEvent);
+            titleInput.dispatchEvent(new Event('input', { bubbles: true }));
+            titleInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        const editors = document.querySelectorAll(formElement.editor);
+        console.log('editors', editors);
+    
+        if (!editors) {
+            console.log('未找到编辑器元素');
+            return;
+        }
+
+        const editor = Array.from(editors).find(element => element.textContent?.includes(formElement.editorText)) as HTMLElement;
+
         if (!editor) {
             console.log('未找到编辑器');
             return;
@@ -186,6 +213,8 @@ export const weixinArticlePublisher = async (data) => {
             content = `<div>${content}</div>`;
         }
 
+        console.log('content', content);
+        
         editorPasteEvent.clipboardData.setData('text/html', content);
         editor.dispatchEvent(editorPasteEvent);
         editor.dispatchEvent(new Event('input', { bubbles: true }));
@@ -218,7 +247,6 @@ export const weixinArticlePublisher = async (data) => {
 
     const fetchImage = async (imageUrl) => {
         return new Promise((resolve, reject) => {
-            // 发送消息到背景脚本，要求获取图片内容
             chrome.runtime.sendMessage({
                 type: 'request',
                 action: 'fetchImage',
@@ -226,7 +254,17 @@ export const weixinArticlePublisher = async (data) => {
                     imageUrl: imageUrl
                 }
             }, (response) => {
+                if (chrome.runtime.lastError) {
+                    console.log('fetchImage lastError', chrome.runtime.lastError);
+                    reject(chrome.runtime.lastError.message);
+                    return;
+                }
                 console.log('response', response);
+                if (!response || response.error) {
+                    console.log('获取图片失败', response?.error);
+                    reject(response?.error || '获取图片失败');
+                    return;
+                }
                 const base64data = response.base64data;
                 if (base64data) {
                     const dataPairs = base64data.split(',');
