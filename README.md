@@ -3,7 +3,7 @@
 </p>
 <h1 align="center" style="margin: 30px 0 30px; font-weight: bold;">PostBot 内容同步助手 v1.2.1</h1>
 
-::: warning
+:::warning
 当前为快速迭代日常开发版，供开源社区贡献者快速协作与迭代。<br />
 开发者如需本地开发运行时，请访问稳定版 <a href="https://github.com/gitcoffee-os/postbot/tree/v1.1.20">PostBot v1.1.20</a>
 。
