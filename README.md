@@ -5,7 +5,7 @@
 
 > [!WARNING]
 > 当前为快速迭代日常开发版，供开源社区贡献者快速协作与迭代。<br />
-> 开发者如需本地开发运行时，请访问稳定版 [PostBot v1.1.20](https://github.com/gitcoffee-os/postbot/tree/v1.1.20)。
+> 开发者如需本地开发运行时，请访问稳定版 [PostBot v1.1.20](https://github.com/gitcoffee-os/postbot/tree/1.1.20)。
 
 <h4 align="center">
 	一款开源的多平台内容同步分发生产力工具。
