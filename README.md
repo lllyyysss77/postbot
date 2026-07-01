@@ -3,10 +3,6 @@
 </p>
 <h1 align="center" style="margin: 30px 0 30px; font-weight: bold;">PostBot 内容同步助手 v1.2.1</h1>
 
-> [!WARNING]
-> 当前为快速迭代日常开发版，供开源社区贡献者快速协作与迭代。<br />
-> 开发者如需本地开发运行时，请访问稳定版 [PostBot v1.1.20](https://github.com/gitcoffee-os/postbot/tree/1.1.20)。
-
 <h4 align="center">
 	一款开源的多平台内容同步分发生产力工具。
 	<br />
@@ -28,6 +24,10 @@
 	正在持续迭代中...
 </p>
 
+> [!WARNING]
+> 当前为快速迭代日常开发版，供开源社区贡献者快速协作与迭代。<br />
+> 开发者如需本地开发运行时，请访问稳定版 [PostBot v1.1.20](https://github.com/gitcoffee-os/postbot/tree/1.1.20)。
+
 ## PostBot 内容同步助手 介绍
 ![postbot-homepage](https://postbot.exmay.com/docs/images/postbot_homepage.png)
 <br />
@@ -45,11 +45,11 @@
 <br />
 ![postbot-editor](https://postbot.exmay.com/docs/images/postbot_editor.png?v=1.2.0)
 <br />
-![postbot-editor](https://postbot.exmay.com/docs/images/postbot_moment.png?v=1.2.0)
+![postbot-moment](https://postbot.exmay.com/docs/images/postbot_moment.png?v=1.2.0)
 <br />
-![postbot-editor](https://postbot.exmay.com/docs/images/postbot_video.png?v=1.2.0)
+![postbot-video](https://postbot.exmay.com/docs/images/postbot_video.png?v=1.2.0)
 <br />
-![postbot-editor](https://postbot.exmay.com/docs/images/postbot_audio.png?v=1.2.0)
+![postbot-audio](https://postbot.exmay.com/docs/images/postbot_audio.png?v=1.2.0)
 <br />
 ![postbot-sidebar](https://postbot.exmay.com/docs/images/postbot_sidebar.png)
 
