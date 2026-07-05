@@ -31,6 +31,7 @@ import { processContent } from '@gitcoffee/postbot-content-adapter';
 import { debounce as debounceUtils } from '@gitcoffee/postbot-utils';
 import antDesignCss from 'data-text:ant-design-vue/dist/reset.css'
 import globalCss from 'data-text:../styles/global.css'
+import { setupDebugger } from './debugger'
 
 const initApp = async () => {
   const host = document.createElement('div');
@@ -60,6 +61,7 @@ const initApp = async () => {
 }
 
 initApp();
+setupDebugger();
 
 let data = {
   content: '',

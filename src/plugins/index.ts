@@ -1,8 +1,8 @@
 import { pluginRegistry, setupInjection, PluginType, PluginBase, PublisherConfig, PluginImplementation } from '@gitcoffee/postbot-plugin-engine';
 import { registerCnPlatforms, platformMetas as cnPlatformMetas, metaInfoList as cnMetaInfoList, publisher as cnPublisher } from '@gitcoffee/postbot-publisher-cn';
+import { registerItPlatforms, platformMetas as itPlatformMetas, platforms as itPlatforms, metaInfoList as itMetaInfoList, publisher as itPublisher } from '@gitcoffee/postbot-publisher-it';
+import { registerIndustryPlatforms, platformMetas as industryPlatformMetas, platforms as industryPlatforms, metaInfoList as industryMetaInfoList, publisher as industryPublisher } from '@gitcoffee/postbot-publisher-industry';
 import { publishEngine } from '@gitcoffee/postbot-publish-engine';
-
-import itPlugin from './it/index';
 
 import { platformMetas, platforms } from '~media/platform';
 import { metaInfoList } from '~media/meta';
@@ -10,7 +10,8 @@ import { publisher } from '~media/publisher/publisher.script';
 
 const pluginList = [
   'it',
-  'cn'
+  'cn',
+  'industry'
 ];
 
 const pluginBaseCn: PluginBase = {
@@ -46,9 +47,76 @@ const cnPlugin = {
   }
 };
 
+const pluginBaseIt: PluginBase = {
+  code: 'it',
+  name: 'IT技术平台同步插件',
+  version: '1.0.0',
+  type: PluginType.PUBLISHER,
+  description: '包含掘金、CSDN等IT技术平台的发布支持',
+  author: 'GitCoffee'
+};
+
+const pluginConfigIt: PublisherConfig = {
+  types: ['article'],
+};
+
+const pluginImplementationIt: PluginImplementation = {
+  initialize: async () => {
+    registerItPlatforms(publishEngine);
+  },
+  getSupportedPlatforms: () => {
+    return Object.keys(itPlatformMetas);
+  }
+};
+
+const itPlugin = {
+  base: pluginBaseIt,
+  config: pluginConfigIt,
+  implementation: pluginImplementationIt,
+  modules: {
+    platform: { platformMetas: itPlatformMetas, platforms: itPlatforms },
+    meta: { metaInfoList: itMetaInfoList },
+    publisher: { publisher: itPublisher }
+  }
+};
+
+const pluginBaseIndustry: PluginBase = {
+  code: 'industry',
+  name: '行业平台发布器插件',
+  version: '1.0.0',
+  type: PluginType.PUBLISHER,
+  description: '包含闲鱼、汽车之家、雪球等行业平台的发布支持',
+  author: 'GitCoffee'
+};
+
+const pluginConfigIndustry: PublisherConfig = {
+  types: ['moment'],
+};
+
+const pluginImplementationIndustry: PluginImplementation = {
+  initialize: async () => {
+    registerIndustryPlatforms(publishEngine);
+  },
+  getSupportedPlatforms: () => {
+    return Object.keys(industryPlatformMetas);
+  }
+};
+
+const industryPlugin = {
+  base: pluginBaseIndustry,
+  config: pluginConfigIndustry,
+  implementation: pluginImplementationIndustry,
+  modules: {
+    platform: { platformMetas: industryPlatformMetas, platforms: industryPlatforms },
+    meta: { metaInfoList: industryMetaInfoList },
+    publisher: { publisher: industryPublisher }
+  }
+};
+
 const pluginModulesMap: Record<string, any> = {
   it: itPlugin,
-  cn: cnPlugin
+  cn: cnPlugin,
+  industry: industryPlugin
 };
 
 const registerPlugins = () => {

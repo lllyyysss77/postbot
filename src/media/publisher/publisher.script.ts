@@ -13,129 +13,109 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { reactive } from "vue";
+import { publisherEntries as cnPublisherEntries } from '@gitcoffee/postbot-publisher-cn';
+import { publisherEntries as itPublisherEntries } from '@gitcoffee/postbot-publisher-it';
+import { publisherEntries as industryPublisherEntries } from '@gitcoffee/postbot-publisher-industry';
+import type { PublisherEntry, DebugConfig } from '@gitcoffee/postbot-publisher-debug';
 
-import { weixinArticlePublisher } from "./platform/article/weixin.publisher";
-import { toutiaoArticlePublisher } from "./platform/article/toutiao.publisher";
-import { xiaohongshuMomentPublisher } from "./platform/moment/xiaohongshu.publisher";
-import { zhihuArticlePublisher } from "./platform/article/zhihu.publisher";
-import { weiboArticlePublisher } from "./platform/article/weibo.publisher";
-import { baijiahaoArticlePublisher } from "./platform/article/baijiahao.publisher";
-import { qqOmArticlePublisher } from "./platform/article/qqOm.publisher";
-import { douyinArticlePublisher } from "./platform/article/douyin.publisher";
-import { bilibiliArticlePublisher } from "./platform/article/bilibili.publisher";
-import { doubanArticlePublisher } from "./platform/article/douban.publisher";
-import { jianshuArticlePublisher } from "./platform/article/jianshu.publisher";
-import { zsxqArticlePublisher } from "./platform/article/zsxq.publisher";
-
-import { weiboMomentPublisher } from "./platform/moment/weibo.publisher";
-import { toutiaoMomentPublisher } from "./platform/moment/toutiao.publisher";
-import { baijiahaoMomentPublisher } from "./platform/moment/baijiahao.publisher";
-import { zhihuMomentPublisher } from "./platform/moment/zhihu.publisher";
-import { weixinMomentPublisher } from "./platform/moment/weixin.publisher";
-import { weixinChannelsMomentPublisher } from "./platform/moment/weixinChannels.publisher";
-import { douyinMonmentPublisher } from "./platform/moment/douyin.publisher";
-import { kuaishouMomentPublisher } from "./platform/moment/kuaishou.publisher";
-import { doubanMomentPublisher } from "./platform/moment/douban.publisher";
-import { zsxqMonmentPublisher } from "./platform/moment/zsxq.publisher";
-
-import { douyinVideoPublisher } from "./platform/video/douyin.publisher";
-import { kuaishouVideoPublisher } from "./platform/video/kuaishou.publisher";
-import { bilibiliVideoPublisher } from "./platform/video/bilibili.publisher";
-import { toutiaoVideoPublisher } from "./platform/video/toutiao.publisher";
-import { weixinChannelsVideoPublisher } from "./platform/video/weixinChannels.publisher";
-import { qqOmVideoPublisher } from "./platform/video/qqOm.publisher";
-import { xiaohongshuVideoPublisher } from "./platform/video/xiaohongshu.publisher";
-import { weiboVideoPublisher } from "./platform/video/weibo.publisher";
-import { zhihuVideoPublisher } from "./platform/video/zhihu.publisher";
-
-import { music163AudioPublisher } from "./platform/audio/music163.publisher";
-import { qqmusicAudioPublisher } from "./platform/audio/qqmusic.publisher";
-import { ximalayaAudioPublisher } from "./platform/audio/ximalaya.publisher";
-import { qingtingAudioPublisher } from "./platform/audio/qingting.publisher";
-import { lizhiAudioPublisher } from "./platform/audio/lizhi.publisher";
-import { xiaoyuzhoufmAudioPublisher } from "./platform/audio/xiaoyuzhoufm.publisher";
-
-export const publisher = reactive({
-    article: {
-        weixin: weixinArticlePublisher,
-        toutiao: toutiaoArticlePublisher,
-        xiaohongshu: xiaohongshuMomentPublisher,
-        zhihu: zhihuArticlePublisher,
-        weibo: weiboArticlePublisher,
-        baijiahao: baijiahaoArticlePublisher,
-        qq_om: qqOmArticlePublisher,
-        weixin_channels: weixinChannelsMomentPublisher,
-        douyin: douyinArticlePublisher,
-        bilibili: bilibiliArticlePublisher,
-        kuaishou: kuaishouMomentPublisher,
-        douban: doubanArticlePublisher,
-        jianshu: jianshuArticlePublisher,
-        zsxq: zsxqArticlePublisher,
-    },
-    moment: {
-        weibo: weiboMomentPublisher,
-        toutiao: toutiaoMomentPublisher,
-        xiaohongshu: xiaohongshuMomentPublisher,
-        baijiahao: baijiahaoMomentPublisher,
-        zhihu: zhihuMomentPublisher,
-        weixin: weixinMomentPublisher,
-        weixin_channels: weixinChannelsMomentPublisher,
-        douyin: douyinMonmentPublisher,
-        bilibili: bilibiliArticlePublisher,
-        kuaishou: kuaishouMomentPublisher,
-        douban: doubanMomentPublisher,
-        zsxq: zsxqMonmentPublisher,
-    },
-    video: {
-        douyin: douyinVideoPublisher,
-        kuaishou: kuaishouVideoPublisher,
-        bilibili: bilibiliVideoPublisher,
-        toutiao: toutiaoVideoPublisher,
-        weixin_channels: weixinChannelsVideoPublisher,
-        qq_om: qqOmVideoPublisher,
-        xiaohongshu: xiaohongshuVideoPublisher,
-        weibo: weiboVideoPublisher,
-        zhihu: zhihuVideoPublisher,
-    },
-    audio: {
-        music163: music163AudioPublisher,
-        qqmusic: qqmusicAudioPublisher,
-        ximalaya: ximalayaAudioPublisher,
-        qingting: qingtingAudioPublisher,
-        lizhi: lizhiAudioPublisher,
-        xiaoyuzhou: xiaoyuzhoufmAudioPublisher,
+const mergePublisherEntries = (...sources: any[]): any => {
+    const result: any = { article: {}, moment: {}, video: {}, audio: {} };
+    for (const source of sources) {
+        for (const type of Object.keys(result)) {
+            if (source[type]) {
+                Object.assign(result[type], source[type]);
+            }
+        }
     }
-});
+    return result;
+};
 
-export const executeScriptsToTabs = (tabs, data) => {
+export const publisherEntries = mergePublisherEntries(
+    cnPublisherEntries,
+    itPublisherEntries,
+    industryPublisherEntries,
+);
+
+/**
+ * 在页面主世界注册发布器调试配置，供调试面板从运行时拉取选择器。
+ * 函数体保持自包含，避免 chrome.scripting.executeScript 序列化时丢失闭包。
+ */
+function registerPublisherConfigOnPage(code: string, config: DebugConfig): void {
+    const key = '__postbotPublisherDebugRegistry__';
+    const w = window as unknown as Record<string, any>;
+    if (!w[key]) {
+        w[key] = {};
+    }
+    w[key][code] = config;
+}
+
+/**
+ * 保留函数映射格式，兼容调用方通过 publisher[type][code] 执行发布脚本。
+ */
+export const publisher = {
+    article: Object.fromEntries(
+        Object.entries(publisherEntries.article).map(([code, entry]) => [code, (entry as PublisherEntry).publish])
+    ),
+    moment: Object.fromEntries(
+        Object.entries(publisherEntries.moment).map(([code, entry]) => [code, (entry as PublisherEntry).publish])
+    ),
+    video: Object.fromEntries(
+        Object.entries(publisherEntries.video).map(([code, entry]) => [code, (entry as PublisherEntry).publish])
+    ),
+    audio: Object.fromEntries(
+        Object.entries(publisherEntries.audio).map(([code, entry]) => [code, (entry as PublisherEntry).publish])
+    ),
+};
+
+export const executeScriptsToTabs = (tabs: any, data: any) => {
     console.log('executeScriptsToTabs');
-    tabs?.forEach(item => {
+    tabs?.forEach((item: any) => {
         const { tab, platform } = item;
         if (!tab?.id) {
             return;
         }
-        chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
-            console.log('tabId', tab.id);
-            console.log('info.status', info.status);
-            if (tabId === tab.id && info.status === 'complete') {
+        let executed = false;
+        const listener = (tabId: number, info: any) => {
+            if (tabId === tab.id && info.status === 'complete' && !executed) {
+                executed = true;
                 chrome.tabs.onUpdated.removeListener(listener);
                 console.log('tab.id', tab.id);
                 console.log('platform.type', platform.type);
                 console.log('platform.code', platform.code);
                 if (platform) {
-                    platform['executeScript'] = publisher[platform.type][platform.code] || publisher['article'][platform.code];
-                    const publisherData = {
-                        data: data?.data,
-                        platform: platform,
-                    };
-                    chrome.scripting.executeScript({
-                        target: { tabId: tab.id },
-                        func: platform.executeScript,
-                        args: [publisherData]
-                    });
+                    const entry: PublisherEntry | undefined =
+                        publisherEntries[platform.type]?.[platform.code] ||
+                        publisherEntries['moment']?.[platform.code] ||
+                        publisherEntries['article']?.[platform.code];
+
+                    const publishFunc = entry?.publish;
+
+                    // 1. 先把该发布器的选择器配置注册到页面主世界，调试面板可实时拉取
+                    if (entry?.debugConfig) {
+                        chrome.scripting.executeScript({
+                            target: { tabId: tab.id },
+                            func: registerPublisherConfigOnPage,
+                            args: [platform.code, entry.debugConfig]
+                        });
+                    }
+
+                    // 2. 执行发布脚本
+                    if (publishFunc && typeof publishFunc === 'function') {
+                        const publisherData = {
+                            data: data?.data,
+                            platform: platform,
+                        };
+                        chrome.scripting.executeScript({
+                            target: { tabId: tab.id },
+                            func: publishFunc,
+                            args: [publisherData]
+                        });
+                    } else {
+                        console.warn(`No publish function found for platform: ${platform.type}/${platform.code}`);
+                    }
                 }
             }
-        });
+        };
+        chrome.tabs.onUpdated.addListener(listener);
     });
 }

@@ -28,21 +28,10 @@ export const weixinChannelsMomentPublisher = async (data) => {
         return new Promise((resolve) => setTimeout(resolve, time));
     }
     
-    const pasteEvent = (): ClipboardEvent => {
-        console.log('pasteEvent');
-        return new ClipboardEvent('paste', {
-            bubbles: true,
-            cancelable: true,
-            clipboardData: new DataTransfer(),
-        });
-    }
-    
     const observeElement = (selector, timeout = 10000) => {
         console.log('observeElement', selector);
         return new Promise((resolve, reject) => {
-        //   const checkElement = () => document.querySelector(selector);
-
-          let checkElement  = null;
+          let checkElement = null;
           if (selector instanceof Function) {
             checkElement = selector;
           } else {
@@ -50,7 +39,7 @@ export const weixinChannelsMomentPublisher = async (data) => {
             console.log('document', document);
             checkElement = () => (editorDocument || document).querySelector(selector);
           }
-      
+
           // 立即检查元素
           let element = checkElement();
           console.log('element', element);
@@ -58,7 +47,7 @@ export const weixinChannelsMomentPublisher = async (data) => {
             resolve(element);
             return;
           }
-      
+
           // 创建 MutationObserver 进行监听
           const observer = new MutationObserver(() => {
             element = checkElement();
@@ -68,15 +57,16 @@ export const weixinChannelsMomentPublisher = async (data) => {
               observer.disconnect();
             }
           });
-      
-          // 启动观察
-          console.log('editorDocument', editorDocument);
-          console.log('document', document);
-          observer.observe((editorDocument || document).body, {
+
+          // 启动观察：ShadowRoot 没有 body，直接观察根节点
+          const root = editorDocument || document;
+          const observeTarget = root.body || root;
+          console.log('observeTarget', observeTarget);
+          observer.observe(observeTarget, {
             childList: true,
             subtree: true,
           });
-      
+
           // 如果超时，拒绝 Promise，并返回中文错误提示
           setTimeout(() => {
             observer.disconnect();
@@ -88,7 +78,7 @@ export const weixinChannelsMomentPublisher = async (data) => {
     const formElement = {
         wujieApp: 'wujie-app',
         editorIframe: 'iframe[name="content"]',
-        title: 'input.weui-desktop-form__input',
+        title: 'input.weui-desktop-form__input[placeholder*="填写标题"]',
         editor: 'div.input-editor',
         // videoUpload: 'input[type="file"]',
         coverDelete: '.article-cover-delete',
@@ -105,7 +95,7 @@ export const weixinChannelsMomentPublisher = async (data) => {
     const fromRule = {
         title: {
             min: 6,
-            max: 16,
+            max: 22,
         }
     }
 
@@ -122,34 +112,92 @@ export const weixinChannelsMomentPublisher = async (data) => {
         return wujieApp?.shadowRoot;
     }
     
+    const dispatchInputEvents = (element: HTMLElement) => {
+        element.dispatchEvent(new Event('focus', { bubbles: true }));
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+        element.dispatchEvent(new Event('change', { bubbles: true }));
+        element.dispatchEvent(new Event('keyup', { bubbles: true }));
+        element.dispatchEvent(new Event('blur', { bubbles: true }));
+    }
+
+    const setNativeValue = (element: HTMLInputElement | HTMLTextAreaElement, value: string) => {
+        const valueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set
+            || Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
+        if (valueSetter) {
+            valueSetter.call(element, value);
+        } else {
+            element.value = value;
+        }
+    }
+
+    const stripHtml = (html: string): string => {
+        if (!html) return '';
+        // 将常见换行标签转为换行符
+        const withBreaks = html
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/<\/p>/gi, '\n')
+            .replace(/<[^>]+>/g, '');
+        // 解码 HTML 实体
+        const tmp = document.createElement('textarea');
+        tmp.innerHTML = withBreaks;
+        return tmp.value.trim();
+    }
+
     const autoFillContent = (contentData) => {
         console.log('autoFillContent');
-        const titleTextarea = editorDocument.querySelector(formElement.title);
-        console.log('titleTextarea', titleTextarea);
-        if (titleTextarea) {
-            (titleTextarea as HTMLTextAreaElement).value = contentData?.title?.slice(0, fromRule.title.max) || '';
-            titleTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-            titleTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+
+        // 1. 填充标题
+        const titleInput = editorDocument.querySelector(formElement.title) as HTMLInputElement;
+        console.log('titleInput', titleInput);
+        if (titleInput) {
+            const title = contentData?.title?.slice(0, fromRule.title.max) || '';
+            titleInput.focus();
+            setNativeValue(titleInput, title);
+            dispatchInputEvents(titleInput);
         }
 
-        const editor = editorDocument.querySelector(formElement.editor)  as HTMLElement;
+        // 2. 填充图文描述（仅纯文本，1000 字符内）
+        const editor = editorDocument.querySelector(formElement.editor) as HTMLElement;
         console.log('editor', editor);
         if (!editor) {
             console.log('未找到编辑器');
             return;
         }
 
-        const content = contentData?.description || contentData?.content;
+        const rawContent = contentData?.description || contentData?.content || '';
+        const content = stripHtml(rawContent).slice(0, 1000);
 
         editor.focus();
-        const editorPasteEvent = pasteEvent();
-        editorPasteEvent.clipboardData.setData('text/plain', content);
-        editor.dispatchEvent(editorPasteEvent);
 
-        // (editor as HTMLTextAreaElement).value = content;
+        // 先清空已有内容
+        editor.innerHTML = '';
+        editor.textContent = '';
 
-        editor.dispatchEvent(new Event('input', { bubbles: true }));
-        editor.dispatchEvent(new Event('change', { bubbles: true }));
+        // 通过 Selection API 插入文本，确保 React/Vue 状态同步
+        const selection = editorDocument.getSelection
+            ? editorDocument.getSelection()
+            : window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(editor);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        const textNode = document.createTextNode(content);
+        range.deleteContents();
+        range.insertNode(textNode);
+        range.collapse(false);
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        // 兜底：若框架未正确响应，再尝试 execCommand
+        if (!editor.textContent && document.execCommand) {
+            document.execCommand('selectAll', false, null);
+            document.execCommand('delete', false, null);
+            document.execCommand('insertText', false, content);
+        }
+
+        dispatchInputEvents(editor);
     };
 
     const base64ToBinary = (base64) => {
@@ -221,7 +269,7 @@ export const weixinChannelsMomentPublisher = async (data) => {
         //     throw new Error('未找到图片上传元素');
         // }
 
-        const imageUpload = editorDocument.querySelector(formElement.imageUpload) as HTMLElement;
+        const imageUpload = editorDocument.querySelector(formElement.imageUpload) as HTMLInputElement;
         if (!imageUpload) {
             throw new Error('未找到图片上传元素');
         }
@@ -234,18 +282,18 @@ export const weixinChannelsMomentPublisher = async (data) => {
             if (image.objectUrl) {
                 const response = await fetch(image.objectUrl);
                 const blob = await response.blob();
-    
+
                 const file = new File([blob], image.name, { type: image.type });
                 dataTransfer.items.add(file);
             } else {
                 const url = image?.url || image?.src;
-                const imageData = await fetchImage(url);
-    
+                const imageData: any = await fetchImage(url);
+
                 let fileName = imageData.fileName;
                 if (!fileName) {
                     fileName = getFileName(fileName, url);
                 }
-    
+
                 const blob = new Blob([imageData.bits], { type: imageData.type });
                 const file = new File([blob], fileName, { type: imageData.type });
                 dataTransfer.items.add(file);
@@ -258,6 +306,7 @@ export const weixinChannelsMomentPublisher = async (data) => {
         }
 
         imageUpload.files = dataTransfer.files;
+        imageUpload.dispatchEvent(new Event('input', { bubbles: true }));
         imageUpload.dispatchEvent(new Event('change', { bubbles: true }));
         await sleep(2000);
         console.log('图片上传成功');
@@ -349,14 +398,18 @@ export const weixinChannelsMomentPublisher = async (data) => {
     
     const getPublishButton = () => {
         const buttons = editorDocument.querySelectorAll(formElement.publishButtons);
-        const publishButton = Array.from(buttons)?.find((button) => button.textContent?.includes(formElement.publishButtonText));
+        const publishButton = Array.from(buttons as NodeListOf<HTMLElement>).find((button) =>
+            button.textContent?.includes(formElement.publishButtonText)
+        );
         console.log('publishButton', publishButton);
         return publishButton;
     }
 
     const getConfirmPublishButton = () => {
         const buttons = editorDocument.querySelectorAll(formElement.publishButtons);
-        const confirmPublishButton = Array.from(buttons)?.find((button) => button.textContent?.includes(formElement.confirmButtonText));
+        const confirmPublishButton = Array.from(buttons as NodeListOf<HTMLElement>).find((button) =>
+            button.textContent?.includes(formElement.confirmButtonText)
+        );
         console.log('confirmPublishButton', confirmPublishButton);
         return confirmPublishButton;
     }
@@ -374,7 +427,7 @@ export const weixinChannelsMomentPublisher = async (data) => {
             cancelable: true
         }));
         
-        const confirmPlublishButton = await observeElement(getConfirmPublishButton);
+        const confirmPlublishButton = await observeElement(getConfirmPublishButton) as HTMLElement;
         if (!confirmPlublishButton) {
             console.log(`未找到${formElement.confirmButtonText}按钮`)
             return;
