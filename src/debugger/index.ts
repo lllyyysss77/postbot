@@ -1,14 +1,5 @@
 import { createDebugger } from '@gitcoffee/postbot-publisher-debug'
-import { publisherDebugConfigs as cnPublisherDebugConfigs } from '@gitcoffee/postbot-publisher-cn'
-import { publisherDebugConfigs as itPublisherDebugConfigs } from '@gitcoffee/postbot-publisher-it'
-import { publisherDebugConfigs as industryPublisherDebugConfigs } from '@gitcoffee/postbot-publisher-industry'
 import type { DebugConfig, DebuggerInstance } from '@gitcoffee/postbot-publisher-debug'
-
-const publisherDebugConfigs = {
-    ...cnPublisherDebugConfigs,
-    ...itPublisherDebugConfigs,
-    ...industryPublisherDebugConfigs,
-};
 
 interface PlatformPattern {
   match: (url: string) => boolean
@@ -46,7 +37,7 @@ const PLATFORM_URL_PATTERNS: PlatformPattern[] = [
 
 let debugInstance: DebuggerInstance | null = null
 
-export function setupDebugger(): void {
+export function setupDebugger(publisherDebugConfigs: Record<string, DebugConfig>): void {
   if (process.env.NODE_ENV !== 'development') {
     return
   }
@@ -57,26 +48,26 @@ export function setupDebugger(): void {
       console.log('[PostBot Debugger] shortcut triggered')
       e.preventDefault()
       e.stopPropagation()
-      toggleDebugPanel()
+      toggleDebugPanel(publisherDebugConfigs)
     }
   })
 
   // 默认初始化调试按钮，用户点击后展开面板；无需记忆快捷键
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    initDebugButton()
+    initDebugButton(publisherDebugConfigs)
   } else {
-    document.addEventListener('DOMContentLoaded', () => initDebugButton())
+    document.addEventListener('DOMContentLoaded', () => initDebugButton(publisherDebugConfigs))
   }
 
   // DEV 环境下自动展开调试面板
   console.log('[PostBot Debugger] auto init in development')
-  detectAndInitDebugger()
+  detectAndInitDebugger(publisherDebugConfigs)
 }
 
-async function initDebugButton(): Promise<void> {
+async function initDebugButton(publisherDebugConfigs: Record<string, DebugConfig>): Promise<void> {
   console.log('[PostBot Debugger] initDebugButton start')
   try {
-    const config = await resolveConfig(window.location.href)
+    const config = await resolveConfig(window.location.href, publisherDebugConfigs)
     console.log('[PostBot Debugger] initDebugButton config resolved:', config?.platform || 'none')
     const groups = config?.groups || [
       {
@@ -103,8 +94,8 @@ async function initDebugButton(): Promise<void> {
   }
 }
 
-async function detectAndInitDebugger(): Promise<void> {
-  const config = await resolveConfig(window.location.href)
+async function detectAndInitDebugger(publisherDebugConfigs: Record<string, DebugConfig>): Promise<void> {
+  const config = await resolveConfig(window.location.href, publisherDebugConfigs)
   if (config) {
     setTimeout(() => {
       debugInstance = createDebugger({ ...config, autoShow: true })
@@ -112,7 +103,7 @@ async function detectAndInitDebugger(): Promise<void> {
   }
 }
 
-async function toggleDebugPanel(): Promise<void> {
+async function toggleDebugPanel(publisherDebugConfigs: Record<string, DebugConfig>): Promise<void> {
   console.log('[PostBot Debugger] toggleDebugPanel')
   if (debugInstance) {
     console.log('[PostBot Debugger] existing instance, toggle')
@@ -120,7 +111,7 @@ async function toggleDebugPanel(): Promise<void> {
     return
   }
 
-  const config = await resolveConfig(window.location.href)
+  const config = await resolveConfig(window.location.href, publisherDebugConfigs)
   console.log('[PostBot Debugger] resolved config:', config?.platform || 'none')
   const groups = config?.groups || [
     {
@@ -148,9 +139,12 @@ async function toggleDebugPanel(): Promise<void> {
  * 2. 通过 background 从页面主世界拉取运行时注册表，
  *    合并由 executeScriptsToTabs 在发布前注入的更精确/更多形态的配置。
  */
-async function resolveConfig(url: string): Promise<DebugConfig | null> {
+async function resolveConfig(
+  url: string,
+  publisherDebugConfigs: Record<string, DebugConfig>
+): Promise<DebugConfig | null> {
   console.log('[PostBot Debugger] resolveConfig for', url)
-  const staticConfig = getStaticConfig(url)
+  const staticConfig = getStaticConfig(url, publisherDebugConfigs)
   console.log('[PostBot Debugger] static config:', staticConfig?.platform || 'none')
   const runtimeConfigs = await fetchRuntimeConfigs()
   console.log('[PostBot Debugger] runtime configs keys:', Object.keys(runtimeConfigs))
@@ -166,7 +160,10 @@ async function resolveConfig(url: string): Promise<DebugConfig | null> {
   return staticConfig
 }
 
-function getStaticConfig(url: string): DebugConfig | null {
+function getStaticConfig(
+  url: string,
+  publisherDebugConfigs: Record<string, DebugConfig>
+): DebugConfig | null {
   for (const p of PLATFORM_URL_PATTERNS) {
     if (p.match(url)) {
       const config = publisherDebugConfigs[p.key]

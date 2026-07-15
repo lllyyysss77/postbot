@@ -571,6 +571,34 @@ export const platforms = reactive({
     },
 });
 
+// 过滤已禁用的平台
+const filterDisabledPlatforms = (obj) => {
+    if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) return obj;
+
+    // 判断当前对象是否为平台对象层级（子项包含 status 字段）
+    const isPlatformObj = Object.values(obj).some(
+        (v) => typeof v === 'object' && v !== null && 'status' in v
+    );
+
+    if (!isPlatformObj) {
+        // 非平台对象，递归处理子级
+        let result = {};
+        for (const key in obj) {
+            result[key] = filterDisabledPlatforms(obj[key]);
+        }
+        return result;
+    }
+
+    // 平台对象层级，过滤 status 为 disabled 的项
+    const result = {};
+    for (const [k, v] of Object.entries(obj)) {
+        if ((v as { status?: string })?.status !== 'disabled') {
+            result[k] = filterDisabledPlatforms(v);
+        }
+    }
+    return result;
+};
+
 // 平台排序辅助函数，递归处理对象中的平台按 sort 升序
 const sortPlatforms = (obj) => {
     // 只对对象类型且不为 null 且非数组进行处理
@@ -607,6 +635,6 @@ const sortPlatforms = (obj) => {
 };
 
 export const getPlatforms = () => {
-    const data = sortPlatforms(platforms);
+    const data = sortPlatforms(filterDisabledPlatforms(platforms));
     return data;
 }

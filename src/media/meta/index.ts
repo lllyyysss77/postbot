@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { reactive } from 'vue';
+import { platformMetas } from '~media/platform';
 
 import { weixinMetaInfo } from './weixin.meta';
 import { toutiaoMetaInfo } from './toutiao.meta';
@@ -49,7 +50,9 @@ export const metaInfoList = reactive({
 
 export const getMetaInfoList = async () => {
     const results = await Promise.all(
-        Object.keys(metaInfoList).map(async (key) => {
+        Object.keys(metaInfoList)
+            .filter(key => platformMetas[key]?.status !== 'disabled')
+            .map(async (key) => {
             let metaInfo = {};
             const meta = metaInfoList[key];
             if (meta != null) {

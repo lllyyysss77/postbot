@@ -1,17 +1,19 @@
 import { pluginRegistry, setupInjection, PluginType, PluginBase, PublisherConfig, PluginImplementation } from '@gitcoffee/postbot-plugin-engine';
-import { registerCnPlatforms, platformMetas as cnPlatformMetas, metaInfoList as cnMetaInfoList, publisher as cnPublisher } from '@gitcoffee/postbot-publisher-cn';
-import { registerItPlatforms, platformMetas as itPlatformMetas, platforms as itPlatforms, metaInfoList as itMetaInfoList, publisher as itPublisher } from '@gitcoffee/postbot-publisher-it';
-import { registerIndustryPlatforms, platformMetas as industryPlatformMetas, platforms as industryPlatforms, metaInfoList as industryMetaInfoList, publisher as industryPublisher } from '@gitcoffee/postbot-publisher-industry';
+import { registerCnPlatforms, platformMetas as cnPlatformMetas, metaInfoList as cnMetaInfoList, publisher as cnPublisher, publisherDebugConfigs as cnPublisherDebugConfigs } from '@gitcoffee/postbot-publisher-cn';
+import { registerItPlatforms, platformMetas as itPlatformMetas, platforms as itPlatforms, metaInfoList as itMetaInfoList, publisher as itPublisher, publisherDebugConfigs as itPublisherDebugConfigs } from '@gitcoffee/postbot-publisher-it';
+import { registerIndustryPlatforms, platformMetas as industryPlatformMetas, platforms as industryPlatforms, metaInfoList as industryMetaInfoList, publisher as industryPublisher, publisherDebugConfigs as industryPublisherDebugConfigs } from '@gitcoffee/postbot-publisher-industry';
 import { publishEngine } from '@gitcoffee/postbot-publish-engine';
 
 import { platformMetas, platforms } from '~media/platform';
 import { metaInfoList } from '~media/meta';
 import { publisher } from '~media/publisher/publisher.script';
+import { debugPlugin } from './debug.plugin';
 
 const pluginList = [
-  'it',
   'cn',
-  'industry'
+  'it',
+  'industry',
+  'debug'
 ];
 
 const pluginBaseCn: PluginBase = {
@@ -43,7 +45,7 @@ const cnPlugin = {
   modules: {
     platform: { platformMetas: cnPlatformMetas },
     meta: { metaInfoList: cnMetaInfoList },
-    publisher: { publisher: cnPublisher }
+    publisher: { publisher: cnPublisher, publisherDebugConfigs: cnPublisherDebugConfigs }
   }
 };
 
@@ -76,7 +78,7 @@ const itPlugin = {
   modules: {
     platform: { platformMetas: itPlatformMetas, platforms: itPlatforms },
     meta: { metaInfoList: itMetaInfoList },
-    publisher: { publisher: itPublisher }
+    publisher: { publisher: itPublisher, publisherDebugConfigs: itPublisherDebugConfigs }
   }
 };
 
@@ -109,14 +111,15 @@ const industryPlugin = {
   modules: {
     platform: { platformMetas: industryPlatformMetas, platforms: industryPlatforms },
     meta: { metaInfoList: industryMetaInfoList },
-    publisher: { publisher: industryPublisher }
+    publisher: { publisher: industryPublisher, publisherDebugConfigs: industryPublisherDebugConfigs }
   }
 };
 
 const pluginModulesMap: Record<string, any> = {
   it: itPlugin,
   cn: cnPlugin,
-  industry: industryPlugin
+  industry: industryPlugin,
+  debug: debugPlugin
 };
 
 const registerPlugins = () => {
@@ -140,6 +143,9 @@ const registerPlugins = () => {
     });
 
     console.log(`已加载 ${pluginRegistry.getAllPlugins().length} 个插件`);
+
+    // 所有发布器插件注册完成后，再挂载调试面板，确保能收集到全部 publisherDebugConfigs
+    debugPlugin.implementation.setupDebugger?.();
   } catch (error) {
     console.error('插件系统初始化失败:', error);
   }

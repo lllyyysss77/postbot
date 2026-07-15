@@ -1,10 +1,18 @@
 import { createMessageHandler } from '@gitcoffee/postbot-background';
 import { POSTBOT_ACTION } from '@gitcoffee/postbot-actions';
 import { state } from "~contents/components/postbot.data";
-import { getPlatforms } from "~media/platform";
+import { getPlatforms, platformMetas } from "~media/platform";
 import { getMetaInfoList } from "~media/meta";
 import { windowPublish } from "~media/publisher";
 import { user } from '@gitcoffee/postbot-api';
+
+// 过滤已禁用的平台
+const filterDisabledMetaInfoList = (metaInfoList: any) => {
+    if (!metaInfoList || typeof metaInfoList !== 'object') return metaInfoList;
+    return Object.fromEntries(
+        Object.entries(metaInfoList).filter(([key]) => platformMetas[key]?.status !== 'disabled')
+    );
+};
 
 const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
     const bytes = new Uint8Array(buffer);
@@ -31,8 +39,9 @@ export const handleMessage = createMessageHandler({
   getPlatforms: (type?: string) => getPlatforms()[type || 'article'],
   getMetaInfoList: async () => {
     const metaInfoList = await getMetaInfoList();
-    state.metaInfoList = metaInfoList;
-    return metaInfoList;
+    const filteredMetaInfoList = filterDisabledMetaInfoList(metaInfoList);
+    state.metaInfoList = filteredMetaInfoList;
+    return filteredMetaInfoList;
   },
   setContentData: (data: any) => { state.contentData = data; },
   getContentData: () => state.contentData,
